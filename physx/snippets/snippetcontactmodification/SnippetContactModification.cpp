@@ -310,7 +310,8 @@ void stepPhysics(bool /*interactive*/)
 
 	gScene->simulate(1.0f/60.0f);
 	gScene->fetchResults(true);
-	printf("%d contact reports\n", PxU32(gContactPositions.size()));
+	if(gContactPositions.size())
+		printf("%d contact reports\n", PxU32(gContactPositions.size()));
 }
 	
 void cleanupPhysics(bool /*interactive*/)
