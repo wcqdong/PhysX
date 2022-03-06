@@ -29,7 +29,15 @@
 #define NOMINMAX
 #include <windows.h>
 
-
+/**
+ * \brief 向上搜索路径，直到找打media文件夹
+ * \param path 
+ * \param buffer 
+ * \param bufferSize 
+ * \param isReadOnly 
+ * \param maxRecursion 
+ * \return 
+ */
 bool SampleFramework::searchForPath(const char* path, char* buffer, int bufferSize, bool isReadOnly, int maxRecursion)
 {
 	char* tmpBuffer = (char*)alloca(bufferSize);

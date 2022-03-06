@@ -831,11 +831,13 @@ void PhysXSample::onInit()
 	bool recordMemoryAllocations = true;
 	const bool useCustomTrackingAllocator = true;
 
+	// 内存分配器
 	PxAllocatorCallback* allocator = &gDefaultAllocatorCallback;
 
 	if(useCustomTrackingAllocator)		
 		allocator = getSampleAllocator();		//optional override that will track memory allocations
 
+	// errorCallBack全局用一个就可以
 	mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, *allocator, getSampleErrorCallback());
 	if(!mFoundation)
 		fatalError("PxCreateFoundation failed!");
@@ -877,6 +879,7 @@ void PhysXSample::onInit()
 	PxTolerancesScale scale;
 	customizeTolerances(scale);
 
+	// recordMemoryAllocations跟踪内存分配，会增加内存和性能消耗
 	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, scale, recordMemoryAllocations, mPvd);
 	if(!mPhysics)
 		fatalError("PxCreatePhysics failed!");
@@ -892,6 +895,7 @@ void PhysXSample::onInit()
 	if(!mCooking)
 		fatalError("PxCreateCooking failed!");
 
+	// this继承了PxDeletionListener来监听物体被release事件，eUSER_RELEASE由用户自己调用内存释放
 	mPhysics->registerDeletionListener(*this, PxDeletionEventFlag::eUSER_RELEASE);
 
 	// setup default material...
@@ -906,15 +910,16 @@ void PhysXSample::onInit()
 	getDefaultSceneDesc(sceneDesc);
 	
 	
-
+	// 指定CPU调度器
 	if(!sceneDesc.cpuDispatcher)
 	{
+		// CPU调度器线程数量
 		mCpuDispatcher = PxDefaultCpuDispatcherCreate(mNbThreads);
 		if(!mCpuDispatcher)
 			fatalError("PxDefaultCpuDispatcherCreate failed!");
 		sceneDesc.cpuDispatcher	= mCpuDispatcher;
 	}
-
+	// 指定
 	if(!sceneDesc.filterShader)
 		sceneDesc.filterShader	= getSampleFilterShader();
 
@@ -936,6 +941,7 @@ void PhysXSample::onInit()
 	//sceneDesc.flags |= PxSceneFlag::eDISABLE_CONTACT_CACHE;
 	//sceneDesc.broadPhaseType =  PxBroadPhaseType::eGPU;
 	//sceneDesc.broadPhaseType = PxBroadPhaseType::eSAP;
+	// 设置最大GPU动态管道数(具体干啥的？不知道)
 	sceneDesc.gpuMaxNumPartitions = 8;
 
 
@@ -945,6 +951,7 @@ void PhysXSample::onInit()
 	sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
 #endif
 
+	//  子类继承，额外设置场景属性
 	customizeSceneDesc(sceneDesc);
 
 	mScene = mPhysics->createScene(sceneDesc);
@@ -956,6 +963,7 @@ void PhysXSample::onInit()
 	PxSceneFlags flag = mScene->getFlags();
 
 	PX_UNUSED(flag);
+	// 设置可视化参数（什么是可视化）
 	mScene->setVisualizationParameter(PxVisualizationParameter::eSCALE,				mInitialDebugRender ? mDebugRenderScale : 0.0f);
 	mScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES,	1.0f);
 

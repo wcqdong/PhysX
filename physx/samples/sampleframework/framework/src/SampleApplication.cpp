@@ -196,12 +196,14 @@ void SampleApplication::onOpen(void)
 	else if(m_cmdline.hasSwitch("null"))   renDesc.driver = SampleRenderer::Renderer::DRIVER_NULL;
 
   char assetPath[512];
+	// 逐层向上找MEDIA_PATH路径
   if (!searchForPath(MEDIA_PATH, assetPath, PX_ARRAY_SIZE(assetPath), true, 20)) {
     RENDERER_ASSERT(false, MEDIA_PATH " could not be found in any of the parent directories!");
     exit(1);
   }
   addSearchPath(assetPath);
 
+	// 渲染相关的先不管
 	m_renderer = SampleRenderer::Renderer::createRenderer(renDesc, assetPath);
 	m_platform->postRendererSetup(m_renderer);
 
