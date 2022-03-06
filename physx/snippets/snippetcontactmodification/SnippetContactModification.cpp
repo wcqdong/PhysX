@@ -98,6 +98,7 @@ class ContactModifyCallback: public PxContactModifyCallback
 {
 	void onContactModify(PxContactModifyPair* const pairs, PxU32 count)
 	{
+		printf("+++++++ \n");
 #if MODIFY_MASS_PROPERTIES
 		//We define a maximum mass ratio that we will accept in this test, which is a ratio of 2
 		const PxReal maxMassRatio = 2.f;
@@ -110,7 +111,6 @@ class ContactModifyCallback: public PxContactModifyCallback
 			{
 				//We only want to perform local mass modification between 2 dynamic bodies because we intend on 
 				//normalizing the mass ratios between the pair within a tolerable range
-				// 增加接触质量和惯性，效果像是黏在了一起，失去弹性？
 
 				PxReal mass0 = dynamic0->getMass();
 				PxReal mass1 = dynamic1->getMass();
@@ -157,7 +157,6 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 
 	if(pair.contactCount && bufferSize)
 	{
-		// 这是一个迭代器，传入首地址和长度，可以把里面的内容遍历出来
 		PxContactStreamIterator iter(patchStream, contactStream, faceIndices, pair.patchCount, pair.contactCount);
 
 		const PxReal* impulses = reinterpret_cast<const PxReal*>(pair.contactImpulses);
@@ -168,7 +167,6 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 
 		invMassScale0 = iter.getInvMassScale0();
 		invMassScale1 = iter.getInvMassScale1();
-		// 两层遍历结构，每个path里有多个contact，（patch是什么），nextPatch后contact的Index也会重置
 		while(iter.hasNextPatch())
 		{
 			iter.nextPatch();
@@ -218,6 +216,7 @@ class ContactReportCallback: public PxSimulationEventCallback
 	void onAdvance(const PxRigidBody*const*, const PxTransform*, const PxU32) {}
 	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) 
 	{
+		printf("---\n");
 		PX_UNUSED((pairHeader));
 		std::vector<PxContactPairPoint> contactPoints;
 	
@@ -229,8 +228,6 @@ class ContactReportCallback: public PxSimulationEventCallback
 			{
 				contactPoints.resize(contactCount);
 				PxReal invMassScale[2];
-				// 提取出接触点信息和massScale
-				// extractContactsWithMassScale函数，仿照API提供的#PxContactPair::exactContacts写的，自己拓展了提取massScale
 				extractContactsWithMassScale(pairs[i], &contactPoints[0], contactCount, invMassScale[0], invMassScale[1]);
 
 				for(PxU32 j=0;j<contactCount;j++)
@@ -270,6 +267,8 @@ void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 		PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
 		body->attachShape(*shape);
 		PxRigidBodyExt::updateMassAndInertia(*body, (i+1)*(i+1)*(i+1)*10.0f);
+		PxReal mass = body->getMass();
+		printf("%f", mass);
 		gScene->addActor(*body);
 	}
 	shape->release();

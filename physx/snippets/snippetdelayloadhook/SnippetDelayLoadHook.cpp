@@ -116,6 +116,7 @@ PxCreateCudaContextManager_FUNC* s_PxCreateCudaContextManager_Func = NULL;
 bool loadPhysicsExplicitely()
 {
 	// load the dlls
+	// 加载库
 	foundationLibrary = LoadLibraryA(foundationLibraryPath);	
 	if(!foundationLibrary)
 		return false;
@@ -136,6 +137,7 @@ bool loadPhysicsExplicitely()
 	}
 
 	// get the function pointers
+	// 获得函数指针
 	s_PxCreateFoundation_Func = (PxCreateFoundation_FUNC*)GetProcAddress(foundationLibrary, "PxCreateFoundation");
 	s_PxCreatePhysics_Func = (PxCreatePhysics_FUNC*)GetProcAddress(physxLibrary, "PxCreateBasePhysics");
 	s_PxSetPhysXDelayLoadHook_Func = (PxSetPhysXDelayLoadHook_FUNC*)GetProcAddress(physxLibrary, "PxSetPhysXDelayLoadHook");

@@ -40,6 +40,7 @@ using namespace physx;
 extern void initPhysics(bool interactive);
 extern void stepPhysics(bool interactive);	
 extern void cleanupPhysics(bool interactive);
+extern void keyPress(unsigned char key, const PxTransform& camera);
 
 extern std::vector<PxVec3> gContactPositions;
 extern std::vector<PxVec3> gContactImpulses;
@@ -59,8 +60,12 @@ void keyboardCallback(unsigned char key, int x, int y)
 	if(key==27)
 		exit(0);
 
-	sCamera->handleKey(key, x, y);
+	if(!sCamera->handleKey(key, x, y)){
+		keyPress(key, sCamera->getTransform());
+	}
 }
+
+
 
 void mouseCallback(int button, int state, int x, int y)
 {

@@ -42,6 +42,7 @@
 #include "../snippetcommon/SnippetPrint.h"
 #include "../snippetcommon/SnippetPVD.h"
 #include "../snippetutils/SnippetUtils.h"
+#include <iostream>
 
 using namespace physx;
 using namespace SnippetUtils;
@@ -95,7 +96,14 @@ public:
 	{		
 		void startNextSubstep();
 
+		PxTransform newTf;
+		gKinematic->getKinematicTarget(newTf);
+		std::cout << "get before " << newTf.p.y << std::endl;
+
 		gScene->fetchResults(true);
+		gKinematic->getKinematicTarget(newTf);
+		std::cout << "get after " << newTf.p.y << std::endl;
+
 		if(++gStepContext.nbSubstepsFinished < NUM_SUBSTEPS)
 			startNextSubstep();
 	}
@@ -119,7 +127,9 @@ public:
 
 
 // Update the sim inputs and start the next PhysX substep.
-
+/**
+ * \brief  一次只simulate一个task，task中再重新创建task
+ */
 void startNextSubstep()
 {
 	// Compute new target pose for the kinematic at the end of the substep.
@@ -132,12 +142,18 @@ void startNextSubstep()
 	const PxReal angVel		= PxTwoPi/period;
 
 	PxReal yPos = PxSin(angVel * sTotalSeconds) * amplitude;
+	// 改变位置
 	gKinematic->setKinematicTarget(PxTransform(0.0f, yPos, 0.0f));
+	std::cout << "set " << yPos << std::endl;
+	PxTransform newTf;
+	gKinematic->getKinematicTarget(newTf);
+	std::cout << "get " << newTf.p.y << std::endl;
 
 	// Create a completion task and set its reference count to 1. This way we can safely submit it to simulate()
 	// and, even if we get context-switched and simulate() completes before we get back, the task's run()
 	// method will not execute until we're ready.
 
+	// +gStepContext.nbSubstepsFinished 地址偏移了1字节？
 	SubstepCompletionTask* nextCompletion = new (gStepContext.taskPool+gStepContext.nbSubstepsFinished) SubstepCompletionTask();
 	nextCompletion->addReference();
 
@@ -150,7 +166,7 @@ void startNextSubstep()
 	// run method executes. In this snippet, there's nothing to do...
 	
 	// Finally, remove the reference that prevents the next completion task running.
-	
+	// 减少一次引用技术才会提交到线程池
 	nextCompletion->removeReference();
 }
 
