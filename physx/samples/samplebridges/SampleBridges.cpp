@@ -483,6 +483,7 @@ void SampleBridges::onInit()
 	mApplication.setMouseCursorHiding(true);
 	mApplication.setMouseCursorRecentering(true);
 
+	// 设置环境光颜色
 	getRenderer()->setAmbientColor(RendererColor(170, 170, 170));
 //	mScene->setGravity(PxVec3(0.0f, -98.1f, 0.0f));
 	getActiveScene().setGravity(PxVec3(0.0f, -9.81f, 0.0f));

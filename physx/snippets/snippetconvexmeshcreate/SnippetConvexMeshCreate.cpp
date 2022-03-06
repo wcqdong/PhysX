@@ -54,7 +54,7 @@ float rand(float loVal, float hiVal)
 }
 
 template<PxConvexMeshCookingType::Enum convexMeshCookingType, bool directInsertion, PxU32 gaussMapLimit>
-void createRandomConvex(PxU32 numVerts, const PxVec3* verts)
+void createRandomConvex(PxU32 numVerts, const PxVec3* verts, PxConvexFlags flags)
 {
 	PxCookingParams params = gCooking->getParams();
 
@@ -73,7 +73,8 @@ void createRandomConvex(PxU32 numVerts, const PxVec3* verts)
 	desc.points.data = verts;
 	desc.points.count = numVerts;
 	desc.points.stride = sizeof(PxVec3);
-	desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+	desc.flags = flags;
+	desc.quantizedCount = 500;
 
 	PxU32 meshSize = 0;
 	PxConvexMesh* convex = NULL;
@@ -135,18 +136,19 @@ void createConvexMeshes()
 	printf("Create convex mesh using the quickhull algorithm: \n\n");
 
 	// The default convex mesh creation serializing to a stream, useful for offline cooking.
-	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, false, 16>(numVerts, vertices);
-
+	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, false, 16>(numVerts, vertices, PxConvexFlag::eCOMPUTE_CONVEX);
+	
 	// The default convex mesh creation without the additional gauss map data.
-	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, false, 256>(numVerts, vertices);
-
+	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, false, 256>(numVerts, vertices, PxConvexFlag::eCOMPUTE_CONVEX);
+	
 	// Convex mesh creation inserting the mesh directly into PhysX. 
 	// Useful for runtime cooking.
-	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, true, 16>(numVerts, vertices);
-
+	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, true, 16>(numVerts, vertices, PxConvexFlag::eCOMPUTE_CONVEX);
+	
 	// Convex mesh creation inserting the mesh directly into PhysX, without gauss map data.
 	// Useful for runtime cooking.
-	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(numVerts, vertices);
+	createRandomConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(numVerts, vertices, PxConvexFlag::eCOMPUTE_CONVEX);
+
 
 	delete [] vertices;
 }

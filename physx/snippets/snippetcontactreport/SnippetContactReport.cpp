@@ -39,6 +39,8 @@
 // 
 // ****************************************************************************
 
+#include <cctype>
+#include <iostream>
 #include <vector>
 
 #include "PxPhysicsAPI.h"
@@ -66,6 +68,23 @@ std::vector<PxVec3> gContactPositions;
 std::vector<PxVec3> gContactImpulses;
 
 
+
+PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, const PxVec3& velocity = PxVec3(0))
+{
+	PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics, t, geometry, *gMaterial, 10.0f);
+	dynamic->setAngularDamping(0.5f);
+	dynamic->setLinearVelocity(velocity);
+	gScene->addActor(*dynamic);
+	return dynamic;
+}
+
+void keyPress(unsigned char key, const PxTransform& camera)
+{
+	switch (toupper(key)){
+	case ' ':	createDynamic(camera, PxSphereGeometry(3.0f), camera.rotate(PxVec3(0, 0, -1)) * 200);	break;
+	}
+}
+
 PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0, 
 										PxFilterObjectAttributes attributes1, PxFilterData filterData1,
 										PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
@@ -92,10 +111,27 @@ class ContactReportCallback: public PxSimulationEventCallback
 	void onSleep(PxActor** actors, PxU32 count)							{ PX_UNUSED(actors); PX_UNUSED(count); }
 	void onTrigger(PxTriggerPair* pairs, PxU32 count)					{ PX_UNUSED(pairs); PX_UNUSED(count); }
 	void onAdvance(const PxRigidBody*const*, const PxTransform*, const PxU32) {}
+
+	/**
+	 * \brief 一个物体可能跟多个物体碰撞，触发多次，例如1 2物体碰撞，同时1 3物体碰撞
+	 * \param pairHeader  
+	 * \param pairs 
+	 * \param nbPairs 
+	 */
 	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) 
 	{
 		PX_UNUSED((pairHeader));
 		std::vector<PxContactPairPoint> contactPoints;
+
+		if(pairHeader.actors[0]->userData)
+		{
+			printf("%d \n", *(int*)(pairHeader.actors[0]->userData));
+		}
+		if (pairHeader.actors[1]->userData)
+		{
+			printf("%d \n", *(int*)(pairHeader.actors[1]->userData));
+		}
+		printf("----\n");
 		
 		for(PxU32 i=0;i<nbPairs;i++)
 		{
@@ -116,6 +152,7 @@ class ContactReportCallback: public PxSimulationEventCallback
 };
 
 ContactReportCallback gContactReportCallback;
+int count = 0;
 
 void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 {
@@ -127,6 +164,7 @@ void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 			PxTransform localTm(PxVec3(PxReal(j*2) - PxReal(size-i), PxReal(i*2+1), 0) * halfExtent);
 			PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
 			body->attachShape(*shape);
+			body->userData = new int(++count);
 			PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
 			gScene->addActor(*body);
 		}
@@ -170,6 +208,7 @@ void stepPhysics(bool /*interactive*/)
 
 	gScene->simulate(1.0f/60.0f);
 	gScene->fetchResults(true);
+	if(gContactPositions.size())
 	printf("%d contact reports\n", PxU32(gContactPositions.size()));
 }
 	

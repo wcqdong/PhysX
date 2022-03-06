@@ -107,6 +107,7 @@ bool PxInitExtensions(PxPhysics& physics, PxPvd* pvd)
 #if PX_SUPPORT_PVD
 	if(pvd)
 	{
+		// gPvdHandler监听连接或断开pvd事件
 		gPvdHandler.mPvd = static_cast<PsPvd*>(pvd);
 		gPvdHandler.mPvd->addClient(&gPvdHandler);
 	}
