@@ -111,7 +111,7 @@ void initPhysics(bool interactive)
 	}
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0,1,0,0), *gMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0,1,0,20), *gMaterial);
 	gScene->addActor(*groundPlane);
 
 	for(PxU32 i=0;i<5;i++)
