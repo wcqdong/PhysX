@@ -60,13 +60,13 @@ using namespace physx;
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
 
-PxFoundation*			gFoundation = NULL;
-PxPhysics*				gPhysics	= NULL;
+PxFoundation* gFoundation = NULL;
+PxPhysics* gPhysics = NULL;
 
-PxDefaultCpuDispatcher*	gDispatcher = NULL;
-PxScene*				gScene		= NULL;
-PxMaterial*				gMaterial	= NULL;
-PxPvd*                  gPvd        = NULL;
+PxDefaultCpuDispatcher* gDispatcher = NULL;
+PxScene* gScene = NULL;
+PxMaterial* gMaterial = NULL;
+PxPvd* gPvd = NULL;
 
 std::vector<PxVec3> gContactPositions;
 std::vector<PxVec3> gContactImpulses;
@@ -74,9 +74,9 @@ std::vector<PxVec3> gContactLinearImpulses[2];
 std::vector<PxVec3> gContactAngularImpulses[2];
 
 
-PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0, 
-										PxFilterObjectAttributes attributes1, PxFilterData filterData1,
-										PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
+PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+	PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+	PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
 {
 	PX_UNUSED(attributes0);
 	PX_UNUSED(attributes1);
@@ -87,42 +87,42 @@ PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, Px
 
 	// all initial and persisting reports for everything, with per-point data
 	pairFlags = PxPairFlag::eSOLVE_CONTACT | PxPairFlag::eDETECT_DISCRETE_CONTACT
-			  |	PxPairFlag::eNOTIFY_TOUCH_FOUND 
-			  | PxPairFlag::eNOTIFY_TOUCH_PERSISTS
-			  | PxPairFlag::eNOTIFY_CONTACT_POINTS
-			  | PxPairFlag::eMODIFY_CONTACTS;
+		| PxPairFlag::eNOTIFY_TOUCH_FOUND
+		| PxPairFlag::eNOTIFY_TOUCH_PERSISTS
+		| PxPairFlag::eNOTIFY_CONTACT_POINTS
+		| PxPairFlag::eMODIFY_CONTACTS;
 	return PxFilterFlag::eDEFAULT;
 }
 
-class ContactModifyCallback: public PxContactModifyCallback
+class ContactModifyCallback : public PxContactModifyCallback
 {
 	void onContactModify(PxContactModifyPair* const pairs, PxU32 count)
 	{
-		printf("+++++++ \n");
 #if MODIFY_MASS_PROPERTIES
 		//We define a maximum mass ratio that we will accept in this test, which is a ratio of 2
 		const PxReal maxMassRatio = 2.f;
 
-		for(PxU32 i = 0; i < count; i++)
+		for (PxU32 i = 0; i < count; i++)
 		{
 			const PxRigidDynamic* dynamic0 = pairs[i].actor[0]->is<PxRigidDynamic>();
 			const PxRigidDynamic* dynamic1 = pairs[i].actor[1]->is<PxRigidDynamic>();
-			if(dynamic0 != NULL && dynamic1 != NULL)
+			if (dynamic0 != NULL && dynamic1 != NULL)
 			{
 				//We only want to perform local mass modification between 2 dynamic bodies because we intend on 
 				//normalizing the mass ratios between the pair within a tolerable range
+				// 增加接触质量和惯性，效果像是黏在了一起，失去弹性？
 
 				PxReal mass0 = dynamic0->getMass();
 				PxReal mass1 = dynamic1->getMass();
 
-				if(mass0 > mass1)
+				if (mass0 > mass1)
 				{
 					//dynamic0 is heavier than dynamic1 so we will locally increase the mass of dynamic1 
 					//to be half the mass of dynamic0.
-					PxReal ratio = mass0/mass1;
-					if(ratio > maxMassRatio)
+					PxReal ratio = mass0 / mass1;
+					if (ratio > maxMassRatio)
 					{
-						PxReal invMassScale = maxMassRatio/ratio;
+						PxReal invMassScale = maxMassRatio / ratio;
 						pairs[i].contacts.setInvMassScale1(invMassScale);
 						pairs[i].contacts.setInvInertiaScale1(invMassScale);
 					}
@@ -131,10 +131,10 @@ class ContactModifyCallback: public PxContactModifyCallback
 				{
 					//dynamic1 is heavier than dynamic0 so we will locally increase the mass of dynamic0 
 					//to be half the mass of dynamic1.
-					PxReal ratio = mass1/mass0;
-					if(ratio > maxMassRatio)
+					PxReal ratio = mass1 / mass0;
+					if (ratio > maxMassRatio)
 					{
-						PxReal invMassScale = maxMassRatio/ratio;
+						PxReal invMassScale = maxMassRatio / ratio;
 						pairs[i].contacts.setInvMassScale0(invMassScale);
 						pairs[i].contacts.setInvInertiaScale0(invMassScale);
 					}
@@ -155,8 +155,9 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 
 	PxU32 nbContacts = 0;
 
-	if(pair.contactCount && bufferSize)
+	if (pair.contactCount && bufferSize)
 	{
+		// 这是一个迭代器，传入首地址和长度，可以把里面的内容遍历出来
 		PxContactStreamIterator iter(patchStream, contactStream, faceIndices, pair.patchCount, pair.contactCount);
 
 		const PxReal* impulses = reinterpret_cast<const PxReal*>(pair.contactImpulses);
@@ -167,10 +168,11 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 
 		invMassScale0 = iter.getInvMassScale0();
 		invMassScale1 = iter.getInvMassScale1();
-		while(iter.hasNextPatch())
+		// 两层遍历结构，每个path里有多个contact，（patch是什么），nextPatch后contact的Index也会重置
+		while (iter.hasNextPatch())
 		{
 			iter.nextPatch();
-			while(iter.hasNextContact())
+			while (iter.hasNextContact())
 			{
 				iter.nextContact();
 				PxContactPairPoint& dst = userBuffer[nbContacts];
@@ -196,7 +198,7 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 				else
 					dst.impulse = PxVec3(0.0f);
 				++nbContacts;
-				if(nbContacts == bufferSize)
+				if (nbContacts == bufferSize)
 					return nbContacts;
 			}
 		}
@@ -207,30 +209,31 @@ PxU32 extractContactsWithMassScale(const PxContactPair& pair, PxContactPairPoint
 
 
 
-class ContactReportCallback: public PxSimulationEventCallback
+class ContactReportCallback : public PxSimulationEventCallback
 {
-	void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count)	{ PX_UNUSED(constraints); PX_UNUSED(count); }
-	void onWake(PxActor** actors, PxU32 count)							{ PX_UNUSED(actors); PX_UNUSED(count); }
-	void onSleep(PxActor** actors, PxU32 count)							{ PX_UNUSED(actors); PX_UNUSED(count); }
-	void onTrigger(PxTriggerPair* pairs, PxU32 count)					{ PX_UNUSED(pairs); PX_UNUSED(count); }
-	void onAdvance(const PxRigidBody*const*, const PxTransform*, const PxU32) {}
-	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) 
+	void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) { PX_UNUSED(constraints); PX_UNUSED(count); }
+	void onWake(PxActor** actors, PxU32 count) { PX_UNUSED(actors); PX_UNUSED(count); }
+	void onSleep(PxActor** actors, PxU32 count) { PX_UNUSED(actors); PX_UNUSED(count); }
+	void onTrigger(PxTriggerPair* pairs, PxU32 count) { PX_UNUSED(pairs); PX_UNUSED(count); }
+	void onAdvance(const PxRigidBody* const*, const PxTransform*, const PxU32) {}
+	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs)
 	{
-		printf("---\n");
 		PX_UNUSED((pairHeader));
 		std::vector<PxContactPairPoint> contactPoints;
-	
 
-		for(PxU32 i=0;i<nbPairs;i++)
+
+		for (PxU32 i = 0; i < nbPairs; i++)
 		{
 			PxU32 contactCount = pairs[i].contactCount;
-			if(contactCount)
+			if (contactCount)
 			{
 				contactPoints.resize(contactCount);
 				PxReal invMassScale[2];
+				// 提取出接触点信息和massScale
+				// extractContactsWithMassScale函数，仿照API提供的#PxContactPair::exactContacts写的，自己拓展了提取massScale
 				extractContactsWithMassScale(pairs[i], &contactPoints[0], contactCount, invMassScale[0], invMassScale[1]);
 
-				for(PxU32 j=0;j<contactCount;j++)
+				for (PxU32 j = 0; j < contactCount; j++)
 				{
 					gContactPositions.push_back(contactPoints[j].position);
 					//Push back reported contact impulses
@@ -238,13 +241,13 @@ class ContactReportCallback: public PxSimulationEventCallback
 
 					//Compute the effective linear/angular impulses for each body.
 					//Note that the local mass scaling permits separate scales for invMass and invInertia.
-					for(PxU32 k = 0; k < 2; ++k)
+					for (PxU32 k = 0; k < 2; ++k)
 					{
 						const PxRigidDynamic* dynamic = pairHeader.actors[k]->is<PxRigidDynamic>();
 						PxVec3 linImpulse(0.f), angImpulse(0.f);
-						if(dynamic != NULL)
+						if (dynamic != NULL)
 						{
-							PxRigidBodyExt::computeLinearAngularImpulse(*dynamic, dynamic->getGlobalPose(), contactPoints[j].position, 
+							PxRigidBodyExt::computeLinearAngularImpulse(*dynamic, dynamic->getGlobalPose(), contactPoints[j].position,
 								k == 0 ? contactPoints[j].impulse : -contactPoints[j].impulse, invMassScale[k], invMassScale[k], linImpulse, angImpulse);
 						}
 						gContactLinearImpulses[k].push_back(linImpulse);
@@ -261,14 +264,12 @@ ContactReportCallback gContactReportCallback;
 void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 {
 	PxShape* shape = gPhysics->createShape(PxBoxGeometry(halfExtent, halfExtent, halfExtent), *gMaterial);
-	for(PxU32 i=0; i<size;i++)
+	for (PxU32 i = 0; i < size; i++)
 	{
-		PxTransform localTm(PxVec3(0, PxReal(i*2+1), 0) * halfExtent);
+		PxTransform localTm(PxVec3(0, PxReal(i * 2 + 1), 0) * halfExtent);
 		PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
 		body->attachShape(*shape);
-		PxRigidBodyExt::updateMassAndInertia(*body, (i+1)*(i+1)*(i+1)*10.0f);
-		PxReal mass = body->getMass();
-		printf("%f", mass);
+		PxRigidBodyExt::updateMassAndInertia(*body, (i + 1) * (i + 1) * (i + 1) * 10.0f);
 		gScene->addActor(*body);
 	}
 	shape->release();
@@ -279,32 +280,32 @@ void initPhysics(bool /*interactive*/)
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 	gPvd = PxCreatePvd(*gFoundation);
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
-	gPvd->connect(*transport,PxPvdInstrumentationFlag::eALL);
+	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
 	PxInitExtensions(*gPhysics, gPvd);
-	
+
 	PxU32 numCores = SnippetUtils::getNbPhysicalCores();
 	gDispatcher = PxDefaultCpuDispatcherCreate(numCores == 0 ? 0 : numCores - 1);
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.cpuDispatcher = gDispatcher;
 	sceneDesc.gravity = PxVec3(0, -9.81f, 0);
-	sceneDesc.filterShader	= contactReportFilterShader;			
-	sceneDesc.simulationEventCallback = &gContactReportCallback;	
+	sceneDesc.filterShader = contactReportFilterShader;
+	sceneDesc.simulationEventCallback = &gContactReportCallback;
 	sceneDesc.contactModifyCallback = &gContactModifyCallback;
 	gScene = gPhysics->createScene(sceneDesc);
 
 	PxPvdSceneClient* pvdClient = gScene->getScenePvdClient();
-	if(pvdClient)
+	if (pvdClient)
 	{
 		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
 	}
 
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0,1,0,0), *gMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
 	gScene->addActor(*groundPlane);
-	createStack(PxTransform(PxVec3(0,0.0f,10.0f)), 5, 2.0f);
+	createStack(PxTransform(PxVec3(0, 0.0f, 10.0f)), 5, 2.0f);
 }
 
 void stepPhysics(bool /*interactive*/)
@@ -312,37 +313,37 @@ void stepPhysics(bool /*interactive*/)
 	gContactPositions.clear();
 	gContactImpulses.clear();
 
-	gScene->simulate(1.0f/60.0f);
+	gScene->simulate(1.0f / 60.0f);
 	gScene->fetchResults(true);
-	if(gContactPositions.size())
+	if (gContactPositions.size())
 		printf("%d contact reports\n", PxU32(gContactPositions.size()));
 }
-	
+
 void cleanupPhysics(bool /*interactive*/)
 {
 	PX_RELEASE(gScene);
 	PX_RELEASE(gDispatcher);
 	PxCloseExtensions();
 	PX_RELEASE(gPhysics);
-	if(gPvd)
+	if (gPvd)
 	{
 		PxPvdTransport* transport = gPvd->getTransport();
 		gPvd->release();	gPvd = NULL;
 		PX_RELEASE(transport);
 	}
 	PX_RELEASE(gFoundation);
-	
+
 	printf("SnippetContactModification done.\n");
 }
 
-int snippetMain(int, const char*const*)
+int snippetMain(int, const char* const*)
 {
 #ifdef RENDER_SNIPPET
 	extern void renderLoop();
 	renderLoop();
 #else
 	initPhysics(false);
-	for(PxU32 i=0; i<250; i++)
+	for (PxU32 i = 0; i < 250; i++)
 		stepPhysics(false);
 	cleanupPhysics(false);
 #endif
