@@ -265,6 +265,7 @@ void initPhysics(bool /*interactive*/)
 	sceneDesc.gravity = PxVec3(0, 0, 0);
 	sceneDesc.filterShader	= contactReportFilterShader;			
 	sceneDesc.simulationEventCallback = &gContactReportCallback;
+	// ¿ªÆôCCD
 	sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
 	sceneDesc.ccdMaxPasses = 4;
 
